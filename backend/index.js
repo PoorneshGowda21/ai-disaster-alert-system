@@ -35,3 +35,18 @@ app.post("/report", async (req, res) => {
 app.listen(5000, () => {
   console.log("Server running on http://localhost:5000");
 });
+
+const axios = require("axios");
+
+app.get("/risk", async (req, res) => {
+  try {
+    const response = await axios.post("http://model:6000/predict", {
+      area: "Bangalore",
+    });
+
+    res.json(response.data);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Error contacting model");
+  }
+});

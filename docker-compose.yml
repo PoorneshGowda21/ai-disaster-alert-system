@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: disasterdb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pass123
+      POSTGRES_DB: disasterdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  model-service:
+    build: ./model-service
+    container_name: model-service
+    ports:
+      - "5001:5001"
+
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+      - model-service
+
+volumes:
+  pgdata:
