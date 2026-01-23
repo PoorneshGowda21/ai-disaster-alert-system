@@ -3,3 +3,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+body {
+  font-family: Arial, sans-serif;
+}
+
+button {
+  cursor: pointer;
+  padding: 6px 12px;
+  margin: 4px;
+}
