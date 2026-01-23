@@ -1,22 +1,28 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 import Landing from "./pages/Landing";
 import MapPage from "./pages/MapPage";
 import Admin from "./pages/Admin";
+import "leaflet/dist/leaflet.css";
 
 export default function App() {
+  const [reports, setReports] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/reports")
+      .then((res) => setReports(res.data))
+      .catch(() => {});
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Landing page */}
         <Route path="/" element={<Landing />} />
-
-        {/* Map page (loads map only after navigation) */}
         <Route path="/map" element={<MapPage />} />
-
-        {/* Admin dashboard */}
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={<Admin reports={reports} />} />
       </Routes>
     </BrowserRouter>
   );

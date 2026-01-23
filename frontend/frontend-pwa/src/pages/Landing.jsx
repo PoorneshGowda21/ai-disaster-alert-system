@@ -6,8 +6,11 @@ export default function Landing() {
   const navigate = useNavigate();
 
   const goToMap = () => {
-    if (!location) return alert("Enter a location");
-    navigate(`/map?location=${location}`);
+    if (location.trim() === "") {
+      alert("Please enter a city");
+      return;
+    }
+    navigate("/map", { state: { city: location } });
   };
 
   return (

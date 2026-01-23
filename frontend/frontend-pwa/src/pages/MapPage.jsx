@@ -1,46 +1,67 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { io } from "socket.io-client";
 import MapView from "../components/MapView";
 
-const socket = io("http://localhost:5000");
-
 export default function MapPage() {
+  const navigate = useNavigate();
+  const locationData = useLocation();
+
+  const city = locationData.state?.city || null;
+
   const [reports, setReports] = useState([]);
-  const query = new URLSearchParams(useLocation().search);
-  const locationName = query.get("location");
+  const [coords, setCoords] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const loadReports = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/reports");
-      setReports(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  // 🚨 Protect route (NO redirect loop)
   useEffect(() => {
-    loadReports();
+    if (!city) {
+      navigate("/");
+    }
+  }, [city, navigate]);
 
-    socket.on("new-report", (data) => {
-      setReports((prev) => [data, ...prev]);
-    });
+  // 📍 Convert city → coordinates
+  useEffect(() => {
+    if (!city) return;
 
-    return () => socket.off("new-report");
+    setLoading(true);
+
+    fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&city=${city}&country=India`,
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.length > 0) {
+          setCoords({
+            lat: parseFloat(data[0].lat),
+            lon: parseFloat(data[0].lon),
+          });
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
+  }, [city]);
+
+  // 📦 Load reports
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/reports")
+      .then((res) => setReports(res.data))
+      .catch((err) => console.error(err));
   }, []);
 
-  return (
-    <div style={{ padding: "10px" }}>
-      {/* Title */}
-      <h3 style={{ textAlign: "center" }}>
-        Showing reports near: {locationName}
-      </h3>
+  // 🟡 Loading guard (PREVENT BLANK PAGE)
+  if (loading || !coords) {
+    return <p style={{ textAlign: "center" }}>Loading map...</p>;
+  }
 
-      {/* 🔥 Day 12 — Risk Summary Panel */}
-      <div
-        style={{ background: "#f5f5f5", padding: "10px", marginBottom: "10px" }}
-      >
+  return (
+    <div>
+      <h2 style={{ textAlign: "center" }}>
+        Disaster Reports for <span style={{ color: "red" }}>{city}</span>
+      </h2>
+
+      <div style={{ background: "#f5f5f5", padding: "10px", margin: "10px" }}>
         <h4>Current Risk Level</h4>
         <p>
           Status: <b>Moderate</b>
@@ -48,33 +69,29 @@ export default function MapPage() {
         <p>Reason: Recent rainfall + community reports</p>
       </div>
 
-      {/* Search */}
-      <div style={{ textAlign: "center", marginBottom: "10px" }}>
+      <div style={{ margin: "10px" }}>
         <input
           placeholder="Search another area"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              window.location.href = `/map?location=${e.target.value}`;
+              navigate("/map", { state: { city: e.target.value } });
             }
           }}
           style={{ padding: "8px", width: "250px" }}
         />
-      </div>
-
-      {/* Navigation */}
-      <div style={{ textAlign: "center", marginBottom: "10px" }}>
-        <button onClick={() => (window.location.href = "/")}>
-          Back to Home
-        </button>{" "}
-        <button onClick={() => (window.location.href = "/admin")}>
+        <br />
+        <br />
+        <button onClick={() => navigate("/")}>Back to Home</button>
+        <button
+          onClick={() => navigate("/admin")}
+          style={{ marginLeft: "10px" }}
+        >
           Admin Dashboard
         </button>
       </div>
 
-      {/* Map */}
-      <MapView reports={reports} />
+      <MapView reports={reports} center={coords} />
 
-      {/* 🔥 Day 12 — Explainability Section */}
       <p
         style={{ fontStyle: "italic", textAlign: "center", marginTop: "10px" }}
       >

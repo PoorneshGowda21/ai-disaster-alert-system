@@ -1,16 +1,28 @@
-export default function Admin({ reports }) {
+export default function Admin({ reports = [] }) {
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Admin Dashboard</h2>
-      <h3>Total Reports: {reports.length}</h3>
+    <div style={{ padding: "20px", minHeight: "100vh", background: "#f4f4f4" }}>
+      <h1>Admin Dashboard</h1>
+      <p>Total Reports: {reports.length}</p>
 
-      <ul>
+      <div style={{ marginTop: "20px" }}>
+        {reports.length === 0 && <p>No reports available</p>}
+
         {reports.map((r) => (
-          <li key={r.id}>
-            <strong>{r.type}</strong> — Severity: {r.severity}
-          </li>
+          <div
+            key={r.id}
+            style={{
+              background: "white",
+              padding: "10px",
+              marginBottom: "10px",
+              borderRadius: "5px",
+            }}
+          >
+            <b>{r.type}</b> | {r.severity}
+            <br />
+            {r.description}
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
