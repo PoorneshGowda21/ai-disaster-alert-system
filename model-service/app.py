@@ -1,21 +1,21 @@
 from flask import Flask, request, jsonify
+import joblib
 
 app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Model service is running"
+model = joblib.load("model.pkl")
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    data = request.get_json()
-    area = data.get("area", "Unknown")
+    data = request.json
+    rainfall = data.get("rainfall", 0)
+    reports = data.get("reports", 0)
+
+    prediction = model.predict([[rainfall, reports]])[0]
 
     return jsonify({
-        "risk_score": 0.63,
-        "confidence": 0.81,
-        "area": area
+        "risk": prediction,
+        "rainfall": rainfall,
+        "reports": reports
     })
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001, debug=True)
+app.run(host="0.0.0.0", port=5001)
