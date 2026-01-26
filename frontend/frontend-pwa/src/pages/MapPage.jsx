@@ -1,103 +1,82 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 import MapView from "../components/MapView";
 
 export default function MapPage() {
-  const navigate = useNavigate();
-  const locationData = useLocation();
-
-  const city = locationData.state?.city || null;
-
   const [reports, setReports] = useState([]);
-  const [coords, setCoords] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [risk, setRisk] = useState(null);
 
-  // 🚨 Protect route (NO redirect loop)
-  useEffect(() => {
-    if (!city) {
-      navigate("/");
-    }
-  }, [city, navigate]);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // 📍 Convert city → coordinates
-  useEffect(() => {
-    if (!city) return;
+  const city = location.state?.city;
 
-    setLoading(true);
-
-    fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&city=${city}&country=India`,
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.length > 0) {
-          setCoords({
-            lat: parseFloat(data[0].lat),
-            lon: parseFloat(data[0].lon),
-          });
-        }
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
-  }, [city]);
-
-  // 📦 Load reports
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/reports")
-      .then((res) => setReports(res.data))
-      .catch((err) => console.error(err));
-  }, []);
-
-  // 🟡 Loading guard (PREVENT BLANK PAGE)
-  if (loading || !coords) {
-    return <p style={{ textAlign: "center" }}>Loading map...</p>;
+  // 🚨 Protect route
+  if (!city) {
+    navigate("/");
+    return null;
   }
 
+  // Load reports
+  const loadReports = async () => {
+    const res = await axios.get("http://localhost:5000/reports");
+    setReports(res.data);
+  };
+
+  // Load AI risk
+  const loadRisk = async () => {
+    const res = await axios.post("http://localhost:5000/predict-risk", {
+      rainfall: 80,
+      area: city,
+    });
+    setRisk(res.data.risk);
+  };
+
+  useEffect(() => {
+    loadReports();
+    loadRisk();
+  }, []);
+
   return (
-    <div>
+    <>
       <h2 style={{ textAlign: "center" }}>
         Disaster Reports for <span style={{ color: "red" }}>{city}</span>
       </h2>
 
-      <div style={{ background: "#f5f5f5", padding: "10px", margin: "10px" }}>
-        <h4>Current Risk Level</h4>
-        <p>
-          Status: <b>Moderate</b>
-        </p>
-        <p>Reason: Recent rainfall + community reports</p>
-      </div>
-
-      <div style={{ margin: "10px" }}>
-        <input
-          placeholder="Search another area"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              navigate("/map", { state: { city: e.target.value } });
-            }
+      {/* 🔥 AI RISK BANNER */}
+      {risk && (
+        <div
+          style={{
+            padding: "12px",
+            margin: "10px",
+            textAlign: "center",
+            background:
+              risk === "HIGH"
+                ? "#d32f2f"
+                : risk === "MODERATE"
+                  ? "#f57c00"
+                  : "#388e3c",
+            color: "white",
+            fontWeight: "bold",
           }}
-          style={{ padding: "8px", width: "250px" }}
-        />
-        <br />
-        <br />
-        <button onClick={() => navigate("/")}>Back to Home</button>
-        <button
-          onClick={() => navigate("/admin")}
-          style={{ marginLeft: "10px" }}
         >
-          Admin Dashboard
-        </button>
+          AI Predicted Risk Level: {risk}
+        </div>
+      )}
+
+      {/* NAV BUTTONS */}
+      <div style={{ textAlign: "center", marginBottom: "10px" }}>
+        <button onClick={() => navigate("/")}>Back to Home</button>{" "}
+        <button onClick={() => navigate("/admin")}>Admin Dashboard</button>
       </div>
 
-      <MapView reports={reports} center={coords} />
+      {/* MAP */}
+      <MapView reports={reports} />
 
-      <p
-        style={{ fontStyle: "italic", textAlign: "center", marginTop: "10px" }}
-      >
-        Alerts are generated using AI predictions combined with live community
-        reports.
+      <p style={{ textAlign: "center", fontStyle: "italic" }}>
+        Risk is predicted using AI based on rainfall and live community reports.
       </p>
-    </div>
+    </>
   );
 }
