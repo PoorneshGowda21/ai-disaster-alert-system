@@ -287,3 +287,5 @@ vite.config.ts.timestamp*
 
 # VSCode settings (optional)
 .vscode/
+backend/nul
+nul

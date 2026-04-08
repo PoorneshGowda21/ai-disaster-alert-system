@@ -1,13 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
+import { useAuth } from "../context/AuthContext";
 import MapView from "../components/MapView";
 
 const API = "http://localhost:5000";
+const socket = io(API, { autoConnect: true });
 
 export default function MapPage() {
   const routerLocation = useLocation();
   const navigate = useNavigate();
+  const { token, user, isLoggedIn, logout } = useAuth();
 
   const city = routerLocation.state?.city;
 
@@ -71,26 +75,34 @@ export default function MapPage() {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
-  // 🔹 AI prediction — re-runs when city OR reports change
+  // ✅ Socket.io — real-time new reports
+  useEffect(() => {
+    socket.on("new-report", (report) => {
+      setReports((prev) => [report, ...prev]);
+    });
+    socket.on("new-alert", (alert) => {
+      showToast(`🚨 HIGH ALERT in ${alert.area}!`, "error");
+    });
+    return () => {
+      socket.off("new-report");
+      socket.off("new-alert");
+    };
+  }, []);
+
+  // ✅ AI prediction using REAL rainfall from Open-Meteo
   useEffect(() => {
     if (!city) return;
     setRiskLoading(true);
-
-    // Dynamic rainfall based on city name (demo variation) + report count
-    const cityHash = city.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-    const baseRainfall = 20 + (cityHash % 80); // 20–99mm based on city
-    const reportBonus  = reports.filter(r => r.city?.toLowerCase() === city.toLowerCase()).length * 10;
-    const rainfall = Math.min(baseRainfall + reportBonus, 120);
-
+    // /predict-risk now fetches real rainfall internally via Open-Meteo
     axios
-      .post(`${API}/predict-risk`, { rainfall, city })
+      .post(`${API}/predict-risk`, { city })
       .then((res) => setRisk(res.data.risk))
       .catch(() => setRisk(null))
       .finally(() => setRiskLoading(false));
   }, [city, reports]);
 
 
-  // 🔹 Submit report
+  // ✅ Submit report — public without login
   const handleSubmit = async () => {
     if (!form.type || !form.severity) {
       showToast("Please fill Type and Severity.", "error");
@@ -98,11 +110,14 @@ export default function MapPage() {
     }
     setSubmitting(true);
     try {
-      await axios.post(`${API}/report`, { ...form, city });
+      await axios.post(
+        `${API}/report`,
+        { ...form, city }
+      );
       showToast("✅ Report submitted successfully!");
       setForm({ type: "", severity: "", description: "", latitude: center[0].toFixed(4), longitude: center[1].toFixed(4), city: city || "" });
-      loadReports();
-    } catch {
+      // No need to call loadReports() — socket.io updates it instantly
+    } catch (err) {
       showToast("Failed to submit report.", "error");
     } finally {
       setSubmitting(false);
@@ -132,6 +147,22 @@ export default function MapPage() {
             onClick={() => navigate("/admin")}>
             Admin
           </button>
+          {isLoggedIn ? (
+            <>
+              <span style={{ fontSize: "13px", color: "var(--text-muted)", padding: "0 4px" }}>
+                👤 {user?.name}
+              </span>
+              <button className="btn btn-ghost" style={{ padding: "7px 14px", fontSize: "13px", color: "var(--risk-high)" }}
+                onClick={() => { logout(); navigate("/login"); }}>
+                Logout
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-primary" style={{ padding: "7px 14px", fontSize: "13px" }}
+              onClick={() => navigate("/login")}>
+              🔑 Login
+            </button>
+          )}
         </div>
       </nav>
 
