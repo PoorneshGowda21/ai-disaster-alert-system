@@ -71,16 +71,24 @@ export default function MapPage() {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
-  // 🔹 AI prediction
+  // 🔹 AI prediction — re-runs when city OR reports change
   useEffect(() => {
     if (!city) return;
     setRiskLoading(true);
+
+    // Dynamic rainfall based on city name (demo variation) + report count
+    const cityHash = city.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    const baseRainfall = 20 + (cityHash % 80); // 20–99mm based on city
+    const reportBonus  = reports.filter(r => r.city?.toLowerCase() === city.toLowerCase()).length * 10;
+    const rainfall = Math.min(baseRainfall + reportBonus, 120);
+
     axios
-      .post(`${API}/predict-risk`, { rainfall: 40, city })
+      .post(`${API}/predict-risk`, { rainfall, city })
       .then((res) => setRisk(res.data.risk))
       .catch(() => setRisk(null))
       .finally(() => setRiskLoading(false));
-  }, [city]);
+  }, [city, reports]);
+
 
   // 🔹 Submit report
   const handleSubmit = async () => {
