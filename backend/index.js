@@ -11,10 +11,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --------------------
-// HTTP + Socket Server
-// --------------------
+// Create HTTP server
 const server = http.createServer(app);
+
+// Attach Socket.IO
 const io = new Server(server, {
   cors: { origin: "*" },
 });
@@ -23,16 +23,13 @@ io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 });
 
-// --------------------
-// Health Check
-// --------------------
+// Health check
 app.get("/", (req, res) => {
-  res.send("Backend is running!");
+  res.send("Backend is running");
 });
 
-// --------------------
-// REPORTS APIs
-// --------------------
+// ---------------- REPORTS ----------------
+
 app.get("/reports", async (req, res) => {
   try {
     const result = await pool.query(
@@ -40,88 +37,104 @@ app.get("/reports", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("Error fetching reports:", err);
-    res.status(500).json({ error: "Error fetching reports" });
+    console.error("Reports error:", err);
+    res.status(500).json({ error: "Failed to fetch reports" });
   }
 });
 
 app.post("/report", async (req, res) => {
-  const { type, severity, description, latitude, longitude } = req.body;
-
   try {
+    const { type, severity, description, latitude, longitude, city } = req.body;
+
+    if (!city) {
+      return res.status(400).json({ error: "City is required" });
+    }
+
     const result = await pool.query(
-      `INSERT INTO reports(type, severity, description, latitude, longitude)
-       VALUES ($1,$2,$3,$4,$5)
-       RETURNING *`,
-      [type, severity, description, latitude, longitude],
+      `INSERT INTO reports(type, severity, description, latitude, longitude, city)
+       VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [type, severity, description, latitude, longitude, city],
     );
 
-    // 🔥 Real-time update
     io.emit("new-report", result.rows[0]);
 
-    res.json({
-      message: "Report received",
-      data: result.rows[0],
-    });
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error("Error saving report:", err);
-    res.status(500).json({ error: "Error saving report" });
+    console.error("Insert report error:", err);
+    res.status(500).json({ error: "Failed to save report" });
   }
 });
 
-// --------------------
-// AI PREDICTION API
-// --------------------
-app.post("/predict-risk", async (req, res) => {
-  try {
-    const { rainfall, area } = req.body;
-
-    const reportsResult = await pool.query("SELECT COUNT(*) FROM reports");
-
-    const reports = Number(reportsResult.rows[0].count);
-
-    const response = await axios.post("http://model-service:5001/predict", {
-      rainfall,
-      reports,
-    });
-
-    const { risk } = response.data;
-
-    await pool.query(
-      "INSERT INTO predictions(area, rainfall, reports, risk) VALUES($1,$2,$3,$4)",
-      [area || "Unknown", rainfall, reports, risk],
-    );
-
-    res.json({
-      area,
-      rainfall,
-      reports,
-      risk,
-    });
-  } catch (err) {
-    console.error("Prediction error:", err.message);
-    res.status(500).json({ error: "Prediction failed" });
-  }
-});
-
-
-// --------------------
-// START SERVER
-// --------------------
-server.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
-});
-
+// ---------------- ALERTS ----------------
 
 app.get("/alerts", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM alerts ORDER BY created_at DESC",
+      "SELECT * FROM alerts ORDER BY sent_at DESC LIMIT 50",
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("Error fetching alerts:", err);
+    console.error("Alerts error:", err);
     res.status(500).json({ error: "Failed to fetch alerts" });
   }
 });
 
+// ---------------- AI RISK ----------------
+
+app.post("/predict-risk", async (req, res) => {
+  try {
+    const { rainfall, city } = req.body;
+
+    if (!city || rainfall === undefined) {
+      return res.status(400).json({ error: "Rainfall and city required" });
+    }
+
+    const countResult = await pool.query(
+      "SELECT COUNT(*) FROM reports WHERE city=$1",
+      [city],
+    );
+
+    const reportsCount = Number(countResult.rows[0].count);
+
+    const aiResponse = await axios.post(
+      "http://localhost:5001/predict",
+      {
+        rainfall,
+        reports: reportsCount,
+      },
+      { timeout: 5000 },
+    );
+
+    const risk = aiResponse.data.risk;
+
+    // Auto-generate alert if HIGH risk
+    if (risk === "HIGH") {
+      await pool.query(
+        `INSERT INTO alerts(area, level, reason)
+         VALUES($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
+        [
+          city,
+          "HIGH",
+          `AI detected HIGH risk: ${reportsCount} reports + ${rainfall}mm rainfall`,
+        ],
+      ).catch(() => {}); // silent fail if ON CONFLICT not supported
+    }
+
+    res.json({
+      city,
+      rainfall,
+      reports: reportsCount,
+      risk,
+    });
+  } catch (err) {
+    console.error("Predict-risk error:", err.message);
+    res.status(500).json({ error: "Prediction failed" });
+  }
+});
+
+// ---------------- SERVER START ----------------
+
+server.listen(5000, () => {
+  console.log("Server running on http://localhost:5000");
+});

@@ -7,15 +7,12 @@ const markerIcon = new L.Icon({
   iconSize: [25, 41],
 });
 
-/* 🔥 This component FORCE-UPDATES map center */
-function RecenterMap({ lat, lon }) {
+function RecenterMap({ center }) {
   const map = useMap();
 
   useEffect(() => {
-    if (lat && lon) {
-      map.setView([lat, lon], 12);
-    }
-  }, [lat, lon, map]);
+    map.setView(center, 11);
+  }, [center, map]);
 
   return null;
 }
@@ -23,17 +20,16 @@ function RecenterMap({ lat, lon }) {
 export default function MapView({ reports, center }) {
   return (
     <MapContainer
-      center={[center.lat, center.lon]}
-      zoom={12}
+      center={center}
+      zoom={11}
       style={{ height: "90vh", width: "100%" }}
     >
+      <RecenterMap center={center} />
+
       <TileLayer
         attribution="© OpenStreetMap"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-
-      {/* ✅ THIS IS WHAT FIXES YOUR ISSUE */}
-      <RecenterMap lat={center.lat} lon={center.lon} />
 
       {reports.length === 0 && (
         <p style={{ textAlign: "center" }}>No reports yet</p>

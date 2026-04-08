@@ -1,19 +1,4 @@
-/* Reset default spacing */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Full screen app */
-html,
-body,
+/* App.css — intentionally minimal, all styles in index.css */
 #root {
-  height: 100%;
-  width: 100%;
-}
-
-/* Prevent scrollbars */
-body {
-  overflow: hidden;
+  min-height: 100vh;
 }

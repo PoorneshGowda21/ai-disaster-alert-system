@@ -15,9 +15,11 @@ CREATE TABLE reports (
     description TEXT,
     latitude FLOAT,
     longitude FLOAT,
+    city VARCHAR(100),
     photo_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 CREATE TABLE predictions (
     id SERIAL PRIMARY KEY,
