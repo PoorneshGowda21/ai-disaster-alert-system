@@ -1,7 +1,3 @@
-# ai-disaster-alert-system
-AI-powered local disaster early warning &amp; community alert system.
-
-
 # DisasterWatch AI — Community Disaster Alert System
 
 An AI-powered, community-driven disaster early warning platform. Citizens report incidents on the ground in real time, and the system combines that crowdsourced data with live weather information to predict flood, fire, and storm risk for any city — before official warnings are issued.
