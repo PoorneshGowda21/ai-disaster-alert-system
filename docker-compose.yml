@@ -1,15 +1,11 @@
 services:
-  postgres:
-    image: postgres:15
-    container_name: disasterdb
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: pass123
-      POSTGRES_DB: disasterdb
+  mongodb:
+    image: mongo:6.0
+    container_name: disastermongo
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mongodata:/data/db
 
   model-service:
     build: ./model-service
@@ -25,8 +21,8 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - postgres
+      - mongodb
       - model-service
 
 volumes:
-  pgdata:
+  mongodata:
