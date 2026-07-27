@@ -1,13 +1,22 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    console.log("⚠️  MONGO_URI not set — running in-memory mode");
+    return false;
+  }
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     console.log("✅ MongoDB connected");
+    return true;
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);
+    return false;
   }
 };
 
-module.exports = connectDB;
+module.exports = { connectDB, mongoose };

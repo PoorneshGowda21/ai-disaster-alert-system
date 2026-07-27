@@ -3,17 +3,19 @@ import { useNavigate } from "react-router-dom";
 
 export default function Landing() {
   const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const goToMap = () => {
-    const trimmed = city.trim();
-    if (!trimmed) {
+    const trimmedCity = city.trim();
+    const trimmedDistrict = district.trim();
+    if (!trimmedCity) {
       setError("Please enter a city or area name.");
       return;
     }
     setError("");
-    navigate("/map", { state: { city: trimmed } });
+    navigate("/map", { state: { city: trimmedCity, district: trimmedDistrict } });
   };
 
   const handleKey = (e) => {
@@ -56,18 +58,30 @@ export default function Landing() {
           and real-time community alerts on an interactive map.
         </p>
 
-        <div className="search-box">
-          <input
-            id="city-search"
-            className="input"
-            placeholder="Enter city (e.g., Mysuru, Bangalore...)"
-            value={city}
-            onChange={(e) => { setCity(e.target.value); setError(""); }}
-            onKeyDown={handleKey}
-            autoFocus
-          />
-          <button id="view-map-btn" className="btn btn-primary" onClick={goToMap}>
-            🗺️ View Map
+        <div className="search-box" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", maxWidth: "500px", padding: "10px", background: "none", border: "none" }}>
+          <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+            <input
+              id="city-search"
+              className="input"
+              placeholder="City / Area (e.g., Gokulam)"
+              value={city}
+              onChange={(e) => { setCity(e.target.value); setError(""); }}
+              onKeyDown={handleKey}
+              autoFocus
+              style={{ flex: 1 }}
+            />
+            <input
+              id="district-search"
+              className="input"
+              placeholder="District / City (e.g., Mysuru)"
+              value={district}
+              onChange={(e) => { setDistrict(e.target.value); setError(""); }}
+              onKeyDown={handleKey}
+              style={{ flex: 1 }}
+            />
+          </div>
+          <button id="view-map-btn" className="btn btn-primary" onClick={goToMap} style={{ width: "100%", justifyContent: "center" }}>
+            🗺️ View Map Location
           </button>
         </div>
 
@@ -105,6 +119,37 @@ export default function Landing() {
               <p>{f.desc}</p>
             </div>
           ))}
+        </div>
+
+        {/* Developer / Portfolio Section */}
+        <div className="developer-section glass" style={{
+          marginTop: "48px",
+          padding: "24px",
+          maxWidth: "700px",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          alignItems: "center",
+          textAlign: "center",
+          animation: "fadeUp 0.8s ease forwards",
+          border: "1px solid rgba(79, 142, 247, 0.2)"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "28px" }}>🚀</span>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "0.5px" }}>Developer Portfolio Specs</h3>
+          </div>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: "1.5" }}>
+            This application is a full-featured showcase of MERN Stack principles. It integrates Leaflet GIS mapping, dynamic weather geocoding APIs, Mongoose data models, real-time Socket.io push broadcasts, and Vercel serverless configurations.
+          </p>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+            <a href="https://github.com/PoorneshGowda21/ai-disaster-alert-system" target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: "8px 16px", fontSize: "12.5px" }}>
+              💻 GitHub Project
+            </a>
+            <a href="https://github.com/PoorneshGowda21" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ padding: "8px 16px", fontSize: "12.5px" }}>
+              📄 View Resume / Profile
+            </a>
+          </div>
         </div>
       </main>
     </div>

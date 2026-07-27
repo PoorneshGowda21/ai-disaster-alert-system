@@ -1,13 +1,21 @@
 {
   "name": "ai-disaster-alert-system-root",
   "version": "1.0.0",
-  "description": "Orchestrates execution of the AI Disaster Alert System MERN stack workspace",
+  "description": "Root workspace of the AI Disaster Alert System",
+  "private": true,
   "scripts": {
-    "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend/frontend-pwa",
-    "backend": "npm run dev --prefix backend",
-    "frontend": "npm run dev --prefix frontend/frontend-pwa",
-    "model": "python model-service/app.py",
-    "dev": "npx concurrently --kill-others \"npm run backend\" \"npm run frontend\" \"npm run model\""
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend/frontend-pwa run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "start": "node backend/index.js",
+    "build:frontend": "npm --prefix frontend/frontend-pwa run build"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "leaflet": "^1.9.4",
+    "pg": "^8.16.3",
+    "react-leaflet": "^5.0.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -1,12 +1,8 @@
-import os
 from flask import Flask, request, jsonify
 import joblib
 
 app = Flask(__name__)
-
-base_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(base_dir, "model.pkl")
-model = joblib.load(model_path)
+model = joblib.load("model.pkl")
 
 @app.route("/predict", methods=["POST"])
 def predict():

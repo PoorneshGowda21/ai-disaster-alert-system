@@ -1,51 +1,14 @@
-const mongoose = require("mongoose");
+const { mongoose } = require("../db");
 
-const ReportSchema = new mongoose.Schema(
-  {
-    type: {
-      type: String,
-      required: [true, "Incident type is required"],
-      enum: ["Flood", "Fire", "Landslide", "Earthquake", "Storm", "Other"],
-    },
-    severity: {
-      type: String,
-      required: [true, "Severity level is required"],
-      enum: ["Low", "Moderate", "High", "Critical"],
-    },
-    description: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-    city: {
-      type: String,
-      required: [true, "City is required"],
-      trim: true,
-      index: true,
-    },
-    location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        required: true,
-        default: "Point",
-      },
-      coordinates: {
-        type: [Number], // Note: [longitude, latitude] format
-        required: true,
-      },
-    },
-    submittedBy: {
-      type: String,
-      default: "Anonymous",
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
-
-// Compound index or specific indexes
-ReportSchema.index({ location: "2dsphere" });
+const ReportSchema = new mongoose.Schema({
+  type: { type: String, required: true },
+  severity: { type: String },
+  description: { type: String },
+  latitude: { type: Number, default: 0 },
+  longitude: { type: Number, default: 0 },
+  city: { type: String, required: true, index: true },
+  submittedBy: { type: String, default: "Anonymous" },
+  created_at: { type: Date, default: Date.now },
+});
 
 module.exports = mongoose.model("Report", ReportSchema);

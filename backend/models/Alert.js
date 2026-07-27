@@ -1,27 +1,10 @@
-const mongoose = require("mongoose");
+const { mongoose } = require("../db");
 
-const AlertSchema = new mongoose.Schema(
-  {
-    area: {
-      type: String,
-      required: [true, "Area/City is required"],
-      trim: true,
-      index: true,
-    },
-    level: {
-      type: String,
-      required: true,
-      enum: ["LOW", "MODERATE", "HIGH"],
-      default: "HIGH",
-    },
-    reason: {
-      type: String,
-      required: true,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+const AlertSchema = new mongoose.Schema({
+  area: { type: String, required: true, index: true },
+  level: { type: String, required: true },
+  reason: { type: String },
+  sent_at: { type: Date, default: Date.now },
+});
 
 module.exports = mongoose.model("Alert", AlertSchema);
